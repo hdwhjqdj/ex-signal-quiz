@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<title>TA还会回头吗 · 回头信号解码</title>
+<style>
+  :root{
+    --bg:#0b1220;
+    --bg2:#111c30;
+    --ink:#dce6f5;
+    --ink2:#a8b8d4;
+    --muted:#5f7099;
+    --rule:#1e2c48;
+    --accent:#3a5a9a;
+    --accent2:#5a82c8;
+    --deep:#233a66;
+    --silver:#c8d4e8;
+    --silver2:#eef3fc;
+    --tint:#16223a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Songti SC","Noto Serif SC","Georgia","SimSun",serif;
+    font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+    overscroll-behavior-y:contain;
+  }
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:
+      radial-gradient(600px 500px at 85% -6%, rgba(90,130,200,.14), transparent 60%),
+      radial-gradient(800px 600px at -10% 40%, rgba(58,90,154,.16), transparent 60%),
+      radial-gradient(900px 700px at 50% 112%, rgba(35,58,102,.22), transparent 60%),
+      radial-gradient(300px 300px at 50% 50%, rgba(200,212,232,.05), transparent 70%);
+  }
+  body::after{
+    content:"☾ ✦ ☾ ✧ ☾ ✦";
+    position:fixed; bottom:0; left:0; right:0; z-index:0; pointer-events:none;
+    font-size:36px; color:rgba(200,212,232,.06); letter-spacing:32px; font-weight:700;
+    overflow:hidden; white-space:nowrap;
+  }
+  [hidden]{display:none !important}
+  button{font-family:inherit; font-size:inherit; color:inherit; border:none; background:none; cursor:pointer; touch-action:manipulation}
+  .app{max-width:520px; margin:0 auto; background:transparent; min-height:100vh; min-height:100svh; position:relative; z-index:1}
+  .screen{min-height:100vh; min-height:100svh; display:flex; flex-direction:column}
+
+  /* ---------- 封面 ---------- */
+  #s-cover{padding:calc(34px + env(safe-area-inset-top)) 22px calc(26px + env(safe-area-inset-bottom)); position:relative}
+  #s-cover::before{
+    content:"☾"; position:absolute; top:calc(44px + env(safe-area-inset-top)); left:18px;
+    font-size:22px; color:var(--silver); z-index:3; opacity:.6;
+  }
+  #s-cover::after{
+    content:"✦"; position:absolute; top:calc(44px + env(safe-area-inset-top)); right:18px;
+    font-size:20px; color:var(--silver); z-index:3; opacity:.6;
+  }
+  #s-cover>div{
+    display:flex; flex-direction:column; flex:1; min-height:0; position:relative; z-index:2;
+    border:2px solid var(--accent2); border-radius:6px; padding:28px 20px 22px;
+    background:linear-gradient(180deg, rgba(17,28,48,.88), rgba(11,18,32,.94));
+    box-shadow:0 0 0 1px var(--deep), 0 0 0 3px var(--bg), 0 20px 60px rgba(0,0,0,.6);
+  }
+  #s-cover>div::before{
+    content:""; position:absolute; top:4px; left:4px; right:4px; bottom:4px;
+    border:1px solid rgba(200,212,232,.2); border-radius:4px; pointer-events:none;
+  }
+  .kicker{font-size:11px; letter-spacing:.32em; color:var(--silver); font-weight:700; text-transform:uppercase; border-bottom:1px solid var(--rule); padding-bottom:10px}
+  .cover-mid{flex:1; display:flex; flex-direction:column; justify-content:center; padding:24px 0}
+  .cover-title{
+    font-size:46px; line-height:1.15; font-weight:900; letter-spacing:-1px; margin:16px 0 10px;
+    background:linear-gradient(135deg, var(--silver) 0%, var(--silver2) 45%, #fff 70%, var(--accent2) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 2px 10px rgba(200,212,232,.28));
+  }
+  .cover-sub{font-size:17px; color:var(--ink2); font-weight:600; margin:0 0 16px; font-style:italic; letter-spacing:.05em}
+  .cover-desc{font-size:14px; color:var(--muted); margin:0 0 22px; max-width:400px; line-height:1.8; border-left:2px solid var(--accent2); padding-left:14px}
+  .facts{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:26px}
+  .fact{
+    background:linear-gradient(180deg, var(--tint), var(--bg2));
+    border:1px solid var(--accent2); border-radius:0; padding:6px 14px;
+    font-size:12px; color:var(--ink2); letter-spacing:.05em;
+    box-shadow:inset 0 0 0 1px var(--deep);
+  }
+  .fact b{color:var(--silver2); font-weight:800}
+  .btn{display:flex; align-items:center; justify-content:center; width:100%; min-height:58px; border-radius:4px; font-size:16px; font-weight:800; letter-spacing:.15em; transition:transform .12s ease, box-shadow .2s ease; position:relative; overflow:hidden}
+  .btn:active{transform:scale(.985)}
+  .btn-primary{
+    background:linear-gradient(135deg, var(--deep) 0%, var(--accent) 50%, var(--deep) 100%);
+    color:var(--silver2); border:2px solid var(--silver);
+    box-shadow:0 8px 28px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.1), inset 0 0 0 4px var(--bg);
+  }
+  .btn-primary::before{content:"☾ "; margin-right:4px; font-size:14px}
+  .btn-primary::after{content:""; position:absolute; inset:0; background:linear-gradient(120deg, transparent 30%, rgba(200,212,232,.16) 50%, transparent 70%); pointer-events:none; animation:shine 3s infinite}
+  @keyframes shine{0%{opacity:.2} 50%{opacity:.7} 100%{opacity:.2}}
+  .cover-note{font-size:11px; color:var(--muted); text-align:center; margin:14px 0 0; line-height:1.8; letter-spacing:.08em; border-top:1px solid var(--rule); padding-top:12px}
+  .deco{position:absolute; pointer-events:none; user-select:none; opacity:.5; z-index:3; color:var(--silver)}
+  .deco-1{top:calc(60px + env(safe-area-inset-top)); right:32px; font-size:28px; transform:rotate(15deg); color:var(--silver2); text-shadow:0 0 12px rgba(200,212,232,.45)}
+  .deco-2{top:140px; left:28px; font-size:18px; opacity:.5; color:var(--accent2)}
+  .deco-3{bottom:170px; right:38px; font-size:24px; opacity:.55; transform:rotate(-10deg)}
+  .deco-4{top:280px; left:50px; font-size:16px; opacity:.4; color:var(--silver2)}
+  .deco-5{bottom:100px; left:40px; font-size:22px; opacity:.5}
+  .deco-6{top:200px; right:50px; font-size:14px; opacity:.5; color:var(--accent2)}
+
+  /* ---------- 答题 ---------- */
+  .qbar{
+    position:sticky; top:0; z-index:5;
+    background:rgba(11,18,32,.95); backdrop-filter:blur(8px);
+    padding:calc(12px + env(safe-area-inset-top)) 18px 10px;
+    border-bottom:2px solid var(--accent2); box-shadow:0 4px 20px rgba(0,0,0,.6);
+  }
+  .qbar-row{display:flex; align-items:center; gap:12px}
+  .iconbtn{
+    width:36px; height:36px; border-radius:0; border:1px solid var(--accent2);
+    background:var(--bg2); display:flex; align-items:center; justify-content:center;
+    font-size:17px; color:var(--silver); font-weight:700;
+    box-shadow:inset 0 0 0 1px var(--deep);
+  }
+  .iconbtn:disabled{opacity:.3}
+  .qmeta{flex:1}
+  .qcount{display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:6px; letter-spacing:.1em}
+  .qcount b{color:var(--silver); font-weight:800}
+  .pbar{
+    height:8px; background:var(--bg2); border-radius:2px; overflow:hidden;
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.6), 0 0 0 1px var(--rule);
+  }
+  .pbar i{
+    display:block; height:100%; width:0; border-radius:1px;
+    background:linear-gradient(90deg, var(--deep) 0%, var(--accent) 50%, var(--silver) 100%);
+    box-shadow:0 0 12px rgba(90,130,200,.55);
+    transition:width .32s cubic-bezier(.2,.8,.2,1);
+    position:relative;
+  }
+  .pbar i::after{content:""; position:absolute; right:0; top:0; bottom:0; width:14px; background:linear-gradient(90deg, transparent, rgba(238,243,252,.65)); border-radius:1px; animation:shine 2s infinite}
+  .qbody{flex:1; padding:30px 22px calc(30px + env(safe-area-inset-bottom)); display:flex; flex-direction:column}
+  .qno{font-size:11px; letter-spacing:.3em; color:var(--accent2); font-weight:800; margin-bottom:14px; text-transform:uppercase}
+  .qno::before{content:"✦ "; font-size:10px; color:var(--silver)}
+  .qtext{
+    font-size:21px; line-height:1.5; font-weight:700; letter-spacing:-.3px; margin:0 0 8px;
+    color:var(--ink); position:relative; padding-left:16px;
+  }
+  .qtext::before{content:""; position:absolute; left:0; top:6px; bottom:6px; width:3px; background:linear-gradient(180deg, var(--silver), var(--accent)); border-radius:1px}
+  .hint{font-size:12px; color:var(--muted); margin:0 0 26px; letter-spacing:.05em; font-style:italic}
+  .opts{display:flex; flex-direction:column; gap:12px}
+  .opt{
+    background:linear-gradient(180deg, var(--bg2), var(--tint));
+    border:1.5px solid var(--rule); border-radius:2px; padding:16px 18px;
+    text-align:left; font-size:15px; line-height:1.65; min-height:58px; display:flex; align-items:center;
+    transition:border-color .16s, background .16s, transform .1s, box-shadow .16s;
+    box-shadow:inset 0 0 0 1px var(--rule);
+  }
+  .opt:active{transform:scale(.99); background:var(--tint)}
+  .opt.on{
+    border-color:var(--silver); background:linear-gradient(180deg, #1c2c4a, #16223a);
+    box-shadow:inset 0 0 0 1px var(--silver), 0 0 16px rgba(200,212,232,.25);
+  }
+  .opt .dot{width:8px; height:8px; border-radius:50%; background:var(--rule); margin-right:14px; flex:none; transition:background .16s}
+  .opt.on .dot{
+    background:var(--silver2); box-shadow:0 0 0 3px rgba(238,243,252,.25), 0 0 0 6px rgba(58,90,154,.35);
+    animation:pulse 1.2s infinite;
+  }
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(238,243,252,.25), 0 0 0 6px rgba(58,90,154,.35)} 50%{box-shadow:0 0 0 4px rgba(238,243,252,.4), 0 0 0 8px rgba(58,90,154,.55)}}
+  .qfoot{margin-top:auto; padding-top:22px; font-size:11px; color:var(--muted); letter-spacing:.05em}
+
+  /* ---------- 加载 ---------- */
+  #loading{position:fixed; inset:0; background:var(--bg); z-index:40; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px}
+  .spinner{width:38px; height:38px; border:3px solid var(--rule); border-top-color:var(--silver); border-radius:50%; animation:spin .8s linear infinite; box-shadow:0 0 0 3px rgba(200,212,232,.18)}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #loading p{font-size:13px; color:var(--silver); letter-spacing:.15em}
+
+  /* ---------- 结果 ---------- */
+  #s-result{padding:calc(28px + env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom))}
+  .r-kicker{font-size:11px; letter-spacing:.32em; color:var(--silver); font-weight:700; text-align:center; margin-bottom:16px}
+  .r-hero{
+    border:2px solid var(--accent2); border-radius:6px; padding:30px 22px; text-align:center; position:relative;
+    background:linear-gradient(180deg, rgba(17,28,48,.9), rgba(11,18,32,.95));
+    box-shadow:0 0 0 1px var(--deep), 0 16px 48px rgba(0,0,0,.55);
+  }
+  .r-hero::before{content:""; position:absolute; top:4px; left:4px; right:4px; bottom:4px; border:1px solid rgba(200,212,232,.2); border-radius:4px; pointer-events:none}
+  .r-emoji{font-size:44px; line-height:1; margin-bottom:10px; filter:drop-shadow(0 0 14px rgba(200,212,232,.35))}
+  .r-type{font-size:30px; font-weight:900; letter-spacing:2px; margin:0 0 6px; color:var(--silver2)}
+  .r-tagline{font-size:13px; color:var(--ink2); font-style:italic; margin:0 0 18px}
+  .r-score{display:flex; justify-content:center; gap:26px; border-top:1px solid var(--rule); padding-top:18px}
+  .r-score div{text-align:center}
+  .r-score b{display:block; font-size:24px; color:var(--silver2); font-weight:900}
+  .r-score b.big{font-size:34px; background:linear-gradient(135deg, var(--silver), var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent}
+  .r-score span{font-size:11px; color:var(--muted); letter-spacing:.12em}
+  .r-block{
+    margin-top:16px; border:1px solid var(--rule); border-radius:4px; padding:18px 18px;
+    background:linear-gradient(180deg, rgba(22,34,58,.6), rgba(17,28,48,.4));
+  }
+  .r-block h3{margin:0 0 10px; font-size:12px; letter-spacing:.28em; color:var(--silver); font-weight:800; text-transform:uppercase}
+  .r-block h3::before{content:"✦ "; color:var(--accent2); font-size:10px}
+  .r-block p{margin:0; font-size:14.5px; line-height:1.9; color:var(--ink2)}
+  .r-quote{font-size:16px; font-style:italic; color:var(--ink); line-height:1.9}
+  .r-list{margin:0; padding:0; list-style:none}
+  .r-list li{font-size:14.5px; line-height:1.85; color:var(--ink2); padding-left:20px; position:relative; margin-bottom:8px}
+  .r-list li::before{content:"☾"; position:absolute; left:0; top:0; color:var(--accent2); font-size:12px}
+  .r-warn{border-color:var(--deep); background:rgba(35,58,102,.18)}
+  .r-warn p{color:var(--muted); font-size:13px}
+  .r-actions{margin-top:22px; display:flex; flex-direction:column; gap:10px}
+  .btn-ghost{border:1px solid var(--accent2); color:var(--silver); background:transparent; border-radius:4px; min-height:50px}
+  .r-foot{margin-top:18px; text-align:center; font-size:11px; color:var(--muted); letter-spacing:.08em; line-height:1.9}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- 封面 -->
+  <section id="s-cover" class="screen">
+    <div>
+      <div class="kicker">EX SIGNAL DECODER</div>
+      <div class="cover-mid">
+        <h1 class="cover-title">TA 还会<br>回头吗</h1>
+        <p class="cover-sub">分手后，每个动作都是一道谜题。</p>
+        <p class="cover-desc">18 道信号解码题，从联络、足迹、传话、旧物四个维度层层拆解，测出 TA 的回头意愿指数。答案里没有玄学，只有你不敢承认的观察。</p>
+        <div class="facts">
+          <span class="fact"><b>18</b> 道信号题</span>
+          <span class="fact">约 <b>3</b> 分钟</span>
+          <span class="fact">结果仅供娱乐</span>
+        </div>
+        <button class="btn btn-primary" id="btn-start">开始解码</button>
+        <p class="cover-note">本测试为娱乐向内容 · 不构成任何情感建议<br>请在情绪平稳时作答</p>
+      </div>
+    </div>
+    <span class="deco deco-1">☾</span>
+    <span class="deco deco-2">✦</span>
+    <span class="deco deco-3">✧</span>
+    <span class="deco deco-4">✦</span>
+    <span class="deco deco-5">☾</span>
+    <span class="deco deco-6">✧</span>
+  </section>
+
+  <!-- 答题 -->
+  <section id="s-quiz" class="screen" hidden>
+    <div class="qbar">
+      <div class="qbar-row">
+        <button class="iconbtn" id="btn-prev" aria-label="上一题">‹</button>
+        <div class="qmeta">
+          <div class="qcount"><b id="qno">第 1 题</b><span id="qtotal">/ 18 题</span></div>
+          <div class="pbar"><i id="pfill"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="qbody">
+      <div class="qno" id="qdim">SIGNAL</div>
+      <h2 class="qtext" id="qtext"></h2>
+      <p class="hint" id="qhint"></p>
+      <div class="opts" id="qopts"></div>
+      <div class="qfoot">凭你观察到的事实选 · 别选你希望的那个</div>
+    </div>
+  </section>
+
+  <!-- 结果 -->
+  <section id="s-result" class="screen" hidden>
+    <div class="r-kicker">DECODING COMPLETE</div>
+    <div class="r-hero">
+      <div class="r-emoji" id="r-emoji"></div>
+      <h2 class="r-type" id="r-type"></h2>
+      <p class="r-tagline" id="r-tagline"></p>
+      <div class="r-score">
+        <div><b class="big" id="r-index">0</b><span>回头意愿指数</span></div>
+        <div><b id="r-signal">0</b><span>信号强度</span></div>
+        <div><b id="r-base">0</b><span>关系底色</span></div>
+      </div>
+    </div>
+    <div class="r-block"><h3>今夜判词</h3><p class="r-quote" id="r-quote"></p></div>
+    <div class="r-block"><h3>信号解读</h3><p id="r-decoding"></p></div>
+    <div class="r-block"><h3>一句实话</h3><p id="r-truth"></p></div>
+    <div class="r-block"><h3>接下来可以做</h3><ul class="r-list" id="r-todo"></ul></div>
+    <div class="r-block r-warn"><h3>提醒</h3><p>解码的是信号，不是人心。信号会说谎，回忆会滤镜，任何测试都替代不了一次清醒的自我对话。无论结果如何，先照顾好你自己。</p></div>
+    <div class="r-actions">
+      <button class="btn btn-primary" id="btn-share">生成分享文案</button>
+      <button class="btn btn-ghost" id="btn-quick">1 分钟速测版 · 转给纠结的朋友</button>
+      <button class="btn btn-ghost" id="btn-restart">重新测一次</button>
+    </div>
+    <div class="r-foot">TA 还会回头吗 · 回头信号解码<br>娱乐向内容 · 请温柔对待自己</div>
+  </section>
+
+  <!-- 加载 -->
+  <div id="loading" hidden>
+    <div class="spinner"></div>
+    <p>正在比对深夜的行为样本…</p>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var CONFIG = {
+    total: 18,
+    quickUrl: "ex-signal-quiz-8.html"
+  };
+
+  // 维度：contact 联结通道 / trace 数字足迹 / word 间接传话 / belong 旧物领地
+  var DIMS = {
+    contact:{name:"联结通道"},
+    trace:{name:"数字足迹"},
+    word:{name:"间接传话"},
+    belong:{name:"旧物领地"}
+  };
+
+  // 前 12 题为信号题（4 维 × 3 题），后 6 题为关系底色题（axis:"b"）
+  var QUESTIONS = [
+    {dim:"contact", hint:"先回忆，再作答。",
+     text:"分开之后，你们之间的联络入口，现在是什么状态？",
+     opts:[
+       {t:"还躺在彼此的列表里，像一扇没锁的门", s:2},
+       {t:"删了一半——联系方式还在，但动态互相不可见了", s:1},
+       {t:"所有入口都关上了，想找都找不到", s:0}]},
+    {dim:"contact", hint:"想不起来的话，答案其实已经很明显了。",
+     text:"深夜里，你的手机有没有亮起过那个熟悉的名字？",
+     opts:[
+       {t:"有过，不止一次，虽然每次都很短", s:2},
+       {t:"有过一次，之后对方说是发错了", s:1},
+       {t:"没有，那个名字再没有亮起来过", s:0}]},
+    {dim:"contact", hint:"回响的速度，就是心里的距离。",
+     text:"你发出的消息抵达之后，通常会发生什么？",
+     opts:[
+       {t:"会回，字数不多，但总会在某个时刻回过来", s:2},
+       {t:"偶尔回，像投进深井，很久才有一声回响", s:1},
+       {t:"没有回音，或者只剩一个系统提示", s:0}]},
+    {dim:"trace", hint:"凌晨两点的访客记录，比白天的寒暄诚实。",
+     text:"你发的那条深夜动态，访客记录里出现过谁？",
+     opts:[
+       {t:"那个熟悉的头像，时间显示凌晨两点", s:2},
+       {t:"共同好友来过，但不确定是不是替谁来看的", s:1},
+       {t:"空空荡荡，像没人知道你还醒着", s:0}]},
+    {dim:"trace", hint:"动态是公开的，指向是私密的。",
+     text:"分开后，TA 的动态里出现过什么样的句子？",
+     opts:[
+       {t:"一些意有所指的话，配图是你们去过的地方或听过的歌", s:2},
+       {t:"情绪起伏很大的话，但看不出指向谁", s:1},
+       {t:"一切如常，工作美食转发，像什么都没发生过", s:0}]},
+    {dim:"trace", hint:"被注意到的速度，就是被在意的程度。",
+     text:"你换了头像或签名之后，多久会被注意到？",
+     opts:[
+       {t:"很快，TA 会用某种方式让你知道：我看到了", s:2},
+       {t:"过了很久，从共同朋友那里辗转听到一句评价", s:1},
+       {t:"没有任何反应，你的变化石沉大海", s:0}]},
+    {dim:"word", hint:"别人面前的反应，最难伪装。",
+     text:"共同朋友的聚会上，你的名字被提起时，TA 的反应是？",
+     opts:[
+       {t:"会接话，会问近况，语气平静但问得很细", s:2},
+       {t:"不接话也不打断，散场后却私下问朋友你说了什么", s:1},
+       {t:"直接岔开话题，或者起身去倒水", s:0}]},
+    {dim:"word", hint:"一个人怎么讲述过去，就怎么安放过去。",
+     text:"你们分开的事，TA 是怎么对别人讲的？",
+     opts:[
+       {t:"讲得很保留，说：是我自己的问题比较多", s:2},
+       {t:"就事论事，不诋毁也不维护", s:1},
+       {t:"讲得很绝，像在给这段关系盖棺定论", s:0}]},
+    {dim:"word", hint:"面对劝说时的第一反应，最接近真心。",
+     text:"朋友劝 TA 要不要重新开始的时候，TA 的态度是？",
+     opts:[
+       {t:"沉默很久，或者说：以后再说吧", s:2},
+       {t:"苦笑一下，说：哪有那么容易", s:1},
+       {t:"很干脆地说：不可能了", s:0}]},
+    {dim:"belong", hint:"物品的去留，是心意的物证。",
+     text:"你留在 TA 那里的东西，现在的下落是？",
+     opts:[
+       {t:"还在原处，TA 说：你什么时候方便什么时候来拿", s:2},
+       {t:"被打包收进了箱子，但一直没寄出也没扔掉", s:1},
+       {t:"早就清理掉了，或者已经寄还给你", s:0}]},
+    {dim:"belong", hint:"身体比嘴更记得路。",
+     text:"你们以前常去的那些地方，TA 还会去吗？",
+     opts:[
+       {t:"还会去，甚至被朋友撞见过一个人坐在老位置", s:2},
+       {t:"不刻意去也不刻意躲，路过了就路过了", s:1},
+       {t:"再也没去过，甚至绕着走", s:0}]},
+    {dim:"belong", hint:"特殊日子的表现，是一面镜子。",
+     text:"那个对你们有特殊意义的日子，TA 是怎么过的？",
+     opts:[
+       {t:"那天 TA 的动态有些不一样，欲言又止", s:2},
+       {t:"看起来和平常没什么区别，但也没有特别热闹", s:1},
+       {t:"过得比哪天都精彩，像故意要覆盖掉什么", s:0}]},
+    {axis:"b", hint:"最后一组，关于你们这段关系本身。",
+     text:"你们的分开，更接近哪一种？",
+     opts:[
+       {t:"一场谁也说不清的气话，话赶话就到了那一步", s:2},
+       {t:"长期疲惫的累积，没有太多戏剧性", s:1},
+       {t:"有明确的导火索，或者原则性的问题", s:0}]},
+    {axis:"b", hint:"时间是变量，不是答案。",
+     text:"从分开到现在，过去了多久？",
+     opts:[
+       {t:"还在一两个月之内", s:2},
+       {t:"三个月到半年之间", s:1},
+       {t:"超过一年了", s:0}]},
+    {axis:"b", hint:"历史会重复，也会消耗。",
+     text:"这是你们第几次分开？",
+     opts:[
+       {t:"分开过一次，后来和好了，这次又走到了这一步", s:2},
+       {t:"是第一次正式分开", s:1},
+       {t:"分分合合太多次，已经数不清了", s:0}]},
+    {axis:"b", hint:"最后一句话的温度，决定了门留没留缝。",
+     text:"分开那天，最后留给彼此的话是什么？",
+     opts:[
+       {t:"没有狠话，甚至有些平静，像按下了暂停键", s:2},
+       {t:"说了一些重话，但没有把路全部堵死", s:1},
+       {t:"把能伤人的话都说尽了", s:0}]},
+    {axis:"b", hint:"关系的深度，决定了回头的动力。",
+     text:"在那段关系里，你们曾经抵达过怎样的深度？",
+     opts:[
+       {t:"见过彼此最狼狈的样子，也规划过很远的以后", s:2},
+       {t:"认真过，但有些话题始终没敢碰", s:1},
+       {t:"开心居多，回想起来更像一段玩伴关系", s:0}]},
+    {axis:"b", hint:"最后一题，如实作答。",
+     text:"现在的 TA，身边是什么状态？",
+     opts:[
+       {t:"一直空着，没听说有新的人出现", s:2},
+       {t:"有暧昧的传闻，但没坐实", s:1},
+       {t:"已经有新的开始了", s:0}]}
+  ];
+
+  var TYPES = {
+    chao:{
+      name:"潮汐回响", emoji:"🌊",
+      tagline:"潮水退到最远的地方，正在悄悄回涨。",
+      quote:"信号密集，底色也厚。TA 的回头意愿，大概率不是你的错觉。",
+      decoding:"你观察到的那些细节——没删的联系方式、深夜的访客记录、欲言又止的动态——单看都是小事，连起来却是一条清晰的轨迹：TA 没有走远，甚至在悄悄回望。而你们之间的问题更像一场意外，不是一道裂痕，这种底色的关系，潮水回涨只是时间问题。",
+      truth:"但请注意：信号再多，也只是信号。TA 在等台阶，你也在等，两个人隔着一层窗户纸互相张望，是复合路上最常见的拖延。窗户纸不会自己破。",
+      todo:["挑一个双方都情绪平稳的时机，用一件具体的小事自然开场，别一上来就谈复合","先解决导致分开的那个核心问题，再谈重新开始，否则只是下一轮循环","给自己一个期限，期限之内等信号落地，期限之外请往前走"],
+      fit:"回头的潮水值得迎接，但值得你站上去的，只有修过的堤岸。"
+    },
+    wu:{
+      name:"雾里探灯", emoji:"🌫️",
+      tagline:"灯亮着，但照不清路。",
+      quote:"信号不少，底子却薄。那些动静里，不甘心的成分可能比爱意多。",
+      decoding:"TA 确实有动静：会看、会问、会偶尔出现。但你捕捉到的这些信号，更像一个人离开后的惯性回望——不习惯空出来的位置，不甘心先说再见的那个人不是自己。而你们分开的原因偏向结构性问题，光有信号没有解法，就像雾里的灯，看得见，走不过去。",
+      truth:"问自己一个问题：如果 TA 明天回来，导致你们分开的那件事解决了吗？如果答案是没解决，那这些信号再亮，也只是把同一条路重走一遍。",
+      todo:["把 TA 的信号和 TA 的改变分开看，只认后者","别急着回应每一个深夜消息，观察它在白天是否依然成立","把重心放回自己身上，雾天里最该点的是自己的灯"],
+      fit:"雾散之后，灯如果还在，那才是真的。"
+    },
+    jing:{
+      name:"静水深流", emoji:"⛲",
+      tagline:"水面平静，不代表底下没有暗流。",
+      quote:"信号收敛，底色却厚。TA 的安静，可能是克制，也可能是在等你先开口。",
+      decoding:"表面上看，TA 安静得近乎决绝：不联系、不互动、不打听。但你们的分开没有原则性的伤口，关系底色是厚的——这种组合里，安静往往不是放下，而是克制：怕打扰、怕被拒绝、怕先开口就输了。水面上什么都看不见，水底的暗流却从未停过。",
+      truth:"这种局面的风险在于：两个都在克制的人，会把等待熬成错过。静水不会自己流动，需要有人先投一颗石子。",
+      todo:["如果你也还在意，那个先投石子的人可以是你，体面的开场不丢人","观察 TA 在重大节点（你的生日、共同纪念日）有没有细微松动","设定自己的止损线，静水再深，也不值得无限期守候"],
+      fit:"深水值得打捞，但你得先确定，捞上来的是彼此，不是执念。"
+    },
+    yuan:{
+      name:"远岸无声", emoji:"🌑",
+      tagline:"潮水已经退到了看不见的地方。",
+      quote:"信号静默，底色也薄。这段关系的指针，大概率已经停在了过去。",
+      decoding:"联络切断、足迹归零、传话断绝、旧物清空——你提供的所有观察样本都指向同一个方向：TA 已经在往前走了。而关系本身也存在较深的结构性问题，回头的动力不足。这不是判词，只是一份基于你描述的客观拼图。",
+      truth:"这可能不是你想要的结果，但请把它当作一份善意的提醒：你花在解码 TA 上的每一份力气，都是从自己身上拿走的。与其数 TA 的信号，不如数自己今天笑了几次。",
+      todo:["允许自己难过，但给难过设一个期限","把反复查看 TA 动态的动作，换成任何一个对自己好的动作","如果长时间走不出来，找信任的朋友或专业人士聊聊，这不丢人"],
+      fit:"远岸无声的地方，转身就是新的岸。你值得一个不用解码的人。"
+    }
+  };
+
+  // ---------- 状态 ----------
+  var idx = 0;
+  var answers = new Array(CONFIG.total).fill(null);
+
+  // ---------- DOM ----------
+  var $ = function(id){ return document.getElementById(id); };
+  var coverEl = $("s-cover"), quizEl = $("s-quiz"), resultEl = $("s-result"), loadingEl = $("loading");
+
+  // ---------- 工具 ----------
+  function shuffle(arr){
+    var a = arr.slice();
+    for(var i=a.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t = a[i]; a[i]=a[j]; a[j]=t;
+    }
+    return a;
+  }
+
+  // ---------- 渲染 ----------
+  function renderQ(){
+    var q = QUESTIONS[idx];
+    var dimName = q.dim ? DIMS[q.dim].name : "关系底色";
+    $("qdim").textContent = (q.dim ? "SIGNAL · " : "BASE · ") + dimName;
+    $("qno").textContent = "第 " + (idx+1) + " 题";
+    $("qtotal").textContent = "/ " + CONFIG.total + " 题";
+    $("pfill").style.width = ((idx) / CONFIG.total * 100) + "%";
+    $("qtext").textContent = q.text;
+    $("qhint").textContent = q.hint;
+    $("btn-prev").disabled = (idx === 0);
+
+    var box = $("qopts");
+    box.innerHTML = "";
+    var opts = shuffle(q.opts);
+    opts.forEach(function(o){
+      var b = document.createElement("button");
+      b.className = "opt" + (answers[idx] === o.s ? " on" : "");
+      b.innerHTML = '<span class="dot"></span><span>' + o.t + '</span>';
+      b.onclick = function(){
+        answers[idx] = o.s;
+        var all = box.querySelectorAll(".opt");
+        for(var k=0;k<all.length;k++) all[k].classList.remove("on");
+        b.classList.add("on");
+        setTimeout(function(){
+          if(idx < CONFIG.total-1){ idx++; renderQ(); window.scrollTo(0,0); }
+          else{ finish(); }
+        }, 260);
+      };
+      box.appendChild(b);
+    });
+  }
+
+  function calc(){
+    var coreRaw = 0, selfRaw = 0, i;
+    for(i=0;i<12;i++) coreRaw += answers[i];
+    for(i=12;i<18;i++) selfRaw += answers[i];
+    var core = Math.round(coreRaw / 24 * 100);
+    var self = Math.round(selfRaw / 12 * 100);
+    var index = Math.round(core * 0.6 + self * 0.4);
+    var key;
+    var coreHigh = core >= 50, selfHigh = self >= 50;
+    if(coreHigh && selfHigh) key = "chao";
+    else if(coreHigh && !selfHigh) key = "wu";
+    else if(!coreHigh && selfHigh) key = "jing";
+    else key = "yuan";
+    return {core:core, self:self, index:index, key:key};
+  }
+
+  function renderResult(){
+    var r = calc();
+    var t = TYPES[r.key];
+    $("r-emoji").textContent = t.emoji;
+    $("r-type").textContent = t.name;
+    $("r-tagline").textContent = t.tagline;
+    $("r-index").textContent = r.index;
+    $("r-signal").textContent = r.core;
+    $("r-base").textContent = r.self;
+    $("r-quote").textContent = t.quote;
+    $("r-decoding").textContent = t.decoding;
+    $("r-truth").textContent = t.truth;
+    var ul = $("r-todo");
+    ul.innerHTML = "";
+    t.todo.forEach(function(x){
+      var li = document.createElement("li");
+      li.textContent = x;
+      ul.appendChild(li);
+    });
+  }
+
+  function finish(){
+    loadingEl.hidden = false;
+    setTimeout(function(){
+      loadingEl.hidden = true;
+      quizEl.hidden = true;
+      renderResult();
+      resultEl.hidden = false;
+      window.scrollTo(0,0);
+    }, 1400);
+  }
+
+  // ---------- 事件 ----------
+  $("btn-start").onclick = function(){
+    coverEl.hidden = true;
+    quizEl.hidden = false;
+    idx = 0;
+    answers = new Array(CONFIG.total).fill(null);
+    renderQ();
+    window.scrollTo(0,0);
+  };
+
+  $("btn-prev").onclick = function(){
+    if(idx > 0){ idx--; renderQ(); window.scrollTo(0,0); }
+  };
+
+  $("btn-restart").onclick = function(){
+    resultEl.hidden = true;
+    coverEl.hidden = false;
+    window.scrollTo(0,0);
+  };
+
+  $("btn-quick").onclick = function(){
+    location.href = CONFIG.quickUrl;
+  };
+
+  $("btn-share").onclick = function(){
+    var r = calc();
+    var t = TYPES[r.key];
+    var text = "「TA还会回头吗」我的解码结果：" + t.emoji + " " + t.name + "，回头意愿指数 " + r.index + "/100。深夜慎点 → " + location.href;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        $("btn-share").textContent = "已复制，去粘贴吧";
+        setTimeout(function(){ $("btn-share").textContent = "生成分享文案"; }, 1600);
+      }, function(){
+        prompt("复制这段分享文案：", text);
+      });
+    }else{
+      prompt("复制这段分享文案：", text);
+    }
+  };
+})();
+</script>
+</body>
+</html>
